@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#c2593f" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="AI试衣间" />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="icon" href="icon-192.png" />
+  <link rel="apple-touch-icon" href="icon-192.png" />
+  <title>AI 试衣间 · AI Fitting Room</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="logo" aria-hidden="true">👗</span>
+      <div>
+        <h1 data-i18n="appTitle">AI 试衣间</h1>
+        <p class="sub" data-i18n="appSub">上传照片和衣服，看上身效果，AI 帮你选尺码、判断值不值得买</p>
+      </div>
+    </div>
+    <div class="top-actions">
+      <button id="langBtn" class="ghost" type="button">EN</button>
+      <button id="settingsBtn" class="ghost" type="button" data-i18n="settings">设置</button>
+    </div>
+  </header>
+
+  <main>
+    <!-- Settings -->
+    <section id="settingsPanel" class="card hidden">
+      <h2 data-i18n="settingsTitle">设置（只保存在你这台电脑的浏览器里）</h2>
+      <div class="grid2">
+        <label>
+          <span data-i18n="geminiKey">Gemini API Key（免费，必填，用于尺码和购买建议）</span>
+          <input id="geminiKey" type="password" autocomplete="off" placeholder="AIza..." />
+          <small><a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener" data-i18n="getKey">免费获取 →</a></small>
+        </label>
+        <label>
+          <span data-i18n="geminiModel">Gemini 模型</span>
+          <input id="geminiModel" type="text" value="gemini-3.8-flash" />
+          <small data-i18n="geminiModelHint">一般不用改；如果报“模型不存在”，换成 AI Studio 里显示的免费模型名</small>
+        </label>
+        <label>
+          <span data-i18n="hfToken">Hugging Face Token（免费，强烈建议填，用于生成试穿图）</span>
+          <input id="hfToken" type="password" autocomplete="off" placeholder="hf_..." />
+          <small><a href="https://huggingface.co/settings/tokens" target="_blank" rel="noopener" data-i18n="getKey">免费获取 →</a> <span data-i18n="hfHint">不填也能试，但免费额度很少</span></small>
+        </label>
+        <label>
+          <span data-i18n="spaceId">上衣试衣模型（Hugging Face Space）</span>
+          <input id="spaceId" type="text" value="yisol/IDM-VTON" />
+          <small data-i18n="spaceHint">默认 yisol/IDM-VTON；它维护中或排队太久时，可以换成其他 IDM-VTON 的复制版</small>
+        </label>
+        <label>
+          <span data-i18n="spaceId2">裤子 / 裙子 / 连衣裙的试衣模型</span>
+          <input id="spaceId2" type="text" value="franciszzj/Leffa" />
+          <small data-i18n="space2Hint">默认 franciszzj/Leffa；上衣模型不可用时也会自动用它顶上</small>
+        </label>
+      </div>
+      <div class="row-end">
+        <button id="saveSettings" type="button" data-i18n="save">保存</button>
+      </div>
+    </section>
+
+    <div class="cols">
+      <!-- Me -->
+      <section class="card">
+        <h2><span class="num">1</span><span data-i18n="meTitle">我的信息</span></h2>
+        <div class="upload" data-target="person">
+          <input id="personFile" type="file" accept="image/*" hidden />
+          <img id="personPreview" alt="" class="hidden" />
+          <div class="upload-hint" id="personHint">
+            <strong data-i18n="personUpload">上传你的全身或半身照</strong>
+            <small data-i18n="personTips">正面站立、光线清楚、衣服贴身一点效果最好</small>
+          </div>
+        </div>
+
+        <div class="grid2 compact">
+          <label><span data-i18n="gender">性别</span>
+            <select id="gender">
+              <option value="female" data-i18n="female">女</option>
+              <option value="male" data-i18n="male">男</option>
+              <option value="other" data-i18n="other">其他</option>
+            </select>
+          </label>
+          <label><span data-i18n="fit">喜欢的版型</span>
+            <select id="fitPref">
+              <option value="slim" data-i18n="fitSlim">修身</option>
+              <option value="regular" selected data-i18n="fitRegular">合身</option>
+              <option value="loose" data-i18n="fitLoose">宽松</option>
+            </select>
+          </label>
+          <label><span data-i18n="height">身高 cm</span><input id="height" type="number" inputmode="decimal" placeholder="165" /></label>
+          <label><span data-i18n="weight">体重 kg</span><input id="weight" type="number" inputmode="decimal" placeholder="52" /></label>
+          <label><span data-i18n="shoulder">肩宽 cm</span><input id="shoulder" type="number" inputmode="decimal" placeholder="38" /></label>
+          <label><span data-i18n="chest">胸围 cm</span><input id="chest" type="number" inputmode="decimal" placeholder="84" /></label>
+          <label><span data-i18n="waist">腰围 cm</span><input id="waist" type="number" inputmode="decimal" placeholder="66" /></label>
+          <label><span data-i18n="hips">臀围 cm</span><input id="hips" type="number" inputmode="decimal" placeholder="90" /></label>
+          <label><span data-i18n="arm">臂长 cm（选填）</span><input id="arm" type="number" inputmode="decimal" /></label>
+          <label><span data-i18n="inseam">内腿长 cm（选填）</span><input id="inseam" type="number" inputmode="decimal" /></label>
+          <label><span data-i18n="usualTop">平时上衣尺码</span><input id="usualTop" type="text" placeholder="M" /></label>
+          <label><span data-i18n="usualBottom">平时裤子尺码</span><input id="usualBottom" type="text" placeholder="27 / M" /></label>
+        </div>
+        <label class="full"><span data-i18n="bodyNotes">身材特点（选填）</span>
+          <input id="bodyNotes" type="text" data-i18n-ph="bodyNotesPh" placeholder="例如：溜肩、胯宽、手臂偏粗、上身短" />
+        </label>
+        <small class="muted" data-i18n="measureHelp">不知道怎么量？胸围量最丰满处一圈，腰围量最细处，臀围量最宽处，软尺贴身但不勒紧。</small>
+      </section>
+
+      <!-- Garment -->
+      <section class="card">
+        <h2><span class="num">2</span><span data-i18n="garmentTitle">想买的衣服</span></h2>
+        <div class="upload" data-target="garment">
+          <input id="garmentFile" type="file" accept="image/*" hidden />
+          <img id="garmentPreview" alt="" class="hidden" />
+          <div class="upload-hint" id="garmentHint">
+            <strong data-i18n="garmentUpload">上传衣服图片</strong>
+            <small data-i18n="garmentTips">淘宝 / 小红书 / 官网截图都行，最好是平铺图或白底图，只有这一件衣服</small>
+          </div>
+        </div>
+        <div class="grid2 compact">
+          <label><span data-i18n="category">类型</span>
+            <select id="category">
+              <option value="top" data-i18n="catTop">上衣（T恤、衬衫、毛衣）</option>
+              <option value="outer" data-i18n="catOuter">外套</option>
+              <option value="dress" data-i18n="catDress">连衣裙</option>
+              <option value="bottom" data-i18n="catBottom">裤子 / 半身裙</option>
+            </select>
+          </label>
+          <label><span data-i18n="price">价格（选填）</span><input id="price" type="text" placeholder="¥199" /></label>
+        </div>
+        <label class="full"><span data-i18n="garmentDesc">衣服描述（选填）</span>
+          <input id="garmentDesc" type="text" data-i18n-ph="garmentDescPh" placeholder="例如：白色短款针织开衫，面料有弹性" />
+        </label>
+        <label class="full"><span data-i18n="sizeChartText">尺码表（粘贴文字）</span>
+          <textarea id="sizeChartText" rows="4" data-i18n-ph="sizeChartPh" placeholder="例如：&#10;S 衣长60 胸围96 肩宽40&#10;M 衣长62 胸围100 肩宽41&#10;L 衣长64 胸围104 肩宽42"></textarea>
+        </label>
+        <div class="upload small" data-target="chart">
+          <input id="chartFile" type="file" accept="image/*" hidden />
+          <img id="chartPreview" alt="" class="hidden" />
+          <div class="upload-hint" id="chartHint">
+            <strong data-i18n="chartUpload">或上传尺码表截图</strong>
+          </div>
+        </div>
+        <label class="full"><span data-i18n="purpose">用途 / 其他想法（选填）</span>
+          <input id="purpose" type="text" data-i18n-ph="purposePh" placeholder="例如：上班穿、衣柜里已经有很多白T、怕起球" />
+        </label>
+      </section>
+    </div>
+
+    <div class="actions">
+      <button id="runAll" class="primary" type="button" data-i18n="runAll">✨ 生成试穿图 + AI 分析</button>
+      <button id="runTryon" class="ghost" type="button" data-i18n="runTryon">只生成试穿图</button>
+      <button id="runAdvice" class="ghost" type="button" data-i18n="runAdvice">只做尺码和购买建议</button>
+    </div>
+    <p id="formError" class="error hidden"></p>
+
+    <!-- Results -->
+    <div class="cols results">
+      <section class="card" id="tryonCard">
+        <h2 data-i18n="tryonResult">试穿效果</h2>
+        <div id="tryonBox" class="result-box">
+          <p class="muted" data-i18n="tryonEmpty">结果会显示在这里</p>
+        </div>
+      </section>
+      <section class="card" id="adviceCard">
+        <h2 data-i18n="adviceResult">尺码和购买建议</h2>
+        <div id="adviceBox" class="result-box">
+          <p class="muted" data-i18n="adviceEmpty">结果会显示在这里</p>
+        </div>
+      </section>
+    </div>
+
+    <p class="footnote" data-i18n="privacy">隐私提示：照片会发送给 Hugging Face 上的试衣模型和 Google Gemini 做处理。免费版 Gemini 可能会用你的数据改进产品，介意的话不要上传露脸或敏感照片。</p>
+  </main>
+
+  <script src="vendor/gradio-client.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
