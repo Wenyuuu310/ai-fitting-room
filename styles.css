@@ -154,3 +154,5 @@ li { margin: 3px 0; }
 .save-tip { display: none; }
 @media (hover: none) { .save-tip { display: block; } }
 .card { scroll-margin-top: 72px; }
+.key-wrap { display: flex; gap: 6px; }
+.key-wrap .eye { padding: 6px 10px; flex-shrink: 0; }

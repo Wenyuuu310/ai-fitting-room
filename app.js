@@ -466,6 +466,16 @@ Reply with only a JSON object with exactly these keys:
     const b = $("saveSettings"); b.textContent = t("saved");
     setTimeout(() => { b.textContent = t("save"); $("settingsPanel").classList.add("hidden"); }, 900);
   });
+  // Show / hide buttons for the key fields, so a key can be copied to another device.
+  ["geminiKey", "hfToken"].forEach((id) => {
+    const input = $(id);
+    const btn = document.createElement("button");
+    btn.type = "button"; btn.className = "ghost eye"; btn.textContent = "👁";
+    btn.setAttribute("aria-label", "show / hide");
+    btn.addEventListener("click", () => { input.type = input.type === "password" ? "text" : "password"; });
+    const wrap = document.createElement("div"); wrap.className = "key-wrap";
+    input.parentNode.insertBefore(wrap, input); wrap.append(input, btn);
+  });
   $("runAll").addEventListener("click", () => run(true, true));
   $("runTryon").addEventListener("click", () => run(true, false));
   $("runAdvice").addEventListener("click", () => run(false, true));
